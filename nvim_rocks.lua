@@ -27,6 +27,28 @@ local function has_value(tab, val)
     return false
 end
 
+local function shell_name()
+    local shell = vim.env["SHELL"]
+
+    local last_section = {}
+    for part in shell:gmatch("[^/]+") do
+        last_section = part
+    end
+
+    return last_section
+end
+
+local function activate()
+    local shell = shell_name()
+    if shell == "fish" then
+        return "source " .. plugin_path() .. "/bin/activate.fish"
+    elseif shell == "tcsh" then
+        return "source " .. plugin_path() .. "/bin/activate.csh"
+    else
+        return "source " .. plugin_path() .. "/bin/activate"
+    end
+end
+
 local rock_print = function(text)
     print("🤘" .. text)
 end
@@ -39,7 +61,7 @@ end
 
 nvim_rocks.install = function(name)
     rock_print('Trying to install "' .. name .. '"')
-    local result = vim.fn.systemlist("source " .. plugin_path() .. "/bin/activate && luarocks install " .. name)
+    local result = vim.fn.systemlist(activate() .. " && luarocks install " .. name)
     print_list(result)
 
     -- copy shared objects to lua path that neovim finds them
@@ -48,7 +70,7 @@ end
 
 nvim_rocks.remove = function(name)
     rock_print('Trying to remove "' .. name .. '"')
-    local result = vim.fn.systemlist("source " .. plugin_path() .. "/bin/activate && luarocks remove " .. name)
+    local result = vim.fn.systemlist(activate() .. " && luarocks remove " .. name)
     print_list(result)
 
     -- Update links to shared objects
@@ -59,10 +81,9 @@ end
 nvim_rocks.list = function(simple, outdated)
     local cmd_output
     if outdated then
-        cmd_output =
-            vim.fn.systemlist("source " .. plugin_path() .. "/bin/activate && luarocks list --porcelain --outdated")
+        cmd_output = vim.fn.systemlist(activate() .. " && luarocks list --porcelain --outdated")
     else
-        cmd_output = vim.fn.systemlist("source " .. plugin_path() .. "/bin/activate && luarocks list --porcelain")
+        cmd_output = vim.fn.systemlist(activate() .. " && luarocks list --porcelain")
     end
     local result = {}
     for _, line in ipairs(cmd_output) do
